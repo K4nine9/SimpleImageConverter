@@ -1,0 +1,3 @@
+# Optional dependencies requiring system libraries
+# For SVG support (requires cairo system libraries):
+# svglib>=1.5.0

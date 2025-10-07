@@ -1,0 +1,522 @@
+#!/usr/bin/env python3
+"""
+Simple Image Converter Application
+Converts between various image formats including png, jpeg, webp, eps, pdf, tiff, bmp, svg, heif/heic, psd, gif
+"""
+
+import os
+import tkinter as tk
+from tkinter import filedialog, messagebox, ttk
+from PIL import Image
+import io
+
+# Try to import optional libraries
+try:
+    import pillow_heif
+    HEIF_AVAILABLE = True
+except ImportError:
+    HEIF_AVAILABLE = False
+
+try:
+    from reportlab.pdfgen import canvas
+    from reportlab.lib.utils import ImageReader
+    PDF_AVAILABLE = True
+except ImportError:
+    PDF_AVAILABLE = False
+
+try:
+    from svglib.svglib import svg2rlg
+    from reportlab.graphics import renderPDF, renderPM
+    SVG_AVAILABLE = True
+except ImportError:
+    SVG_AVAILABLE = False
+
+try:
+    from psd_tools import PSDImage
+    PSD_AVAILABLE = True
+except ImportError:
+    PSD_AVAILABLE = False
+
+
+class ImageConverterApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Simple Image Converter")
+        self.root.geometry("700x650")
+        
+        self.input_file = ""
+        self.output_file = ""
+        
+        # Supported formats
+        self.input_formats = ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'tiff', 'webp', 'ico']
+        if HEIF_AVAILABLE:
+            self.input_formats.extend(['heif', 'heic'])
+        if PDF_AVAILABLE:
+            self.input_formats.append('pdf')
+        if SVG_AVAILABLE:
+            self.input_formats.append('svg')
+        if PSD_AVAILABLE:
+            self.input_formats.append('psd')
+        
+        self.output_formats = ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'tiff', 'webp', 'ico', 'eps']
+        if HEIF_AVAILABLE:
+            self.output_formats.extend(['heif', 'heic'])
+        if PDF_AVAILABLE:
+            self.output_formats.append('pdf')
+        
+        self.setup_ui()
+        
+    def setup_ui(self):
+        """Setup the user interface"""
+        # Title
+        title_label = tk.Label(self.root, text="Simple Image Converter", 
+                               font=("Arial", 18, "bold"))
+        title_label.pack(pady=10)
+        
+        # Input file section
+        input_frame = tk.LabelFrame(self.root, text="Input File", padx=10, pady=10)
+        input_frame.pack(fill="x", padx=20, pady=5)
+        
+        self.input_label = tk.Label(input_frame, text="No file selected", 
+                                     wraplength=500, justify="left")
+        self.input_label.pack(side="left", fill="x", expand=True)
+        
+        input_btn = tk.Button(input_frame, text="Browse...", 
+                              command=self.select_input_file)
+        input_btn.pack(side="right")
+        
+        # Output file section
+        output_frame = tk.LabelFrame(self.root, text="Output File (Optional)", 
+                                     padx=10, pady=10)
+        output_frame.pack(fill="x", padx=20, pady=5)
+        
+        self.output_label = tk.Label(output_frame, text="Auto (same as input location)", 
+                                      wraplength=500, justify="left")
+        self.output_label.pack(side="left", fill="x", expand=True)
+        
+        output_btn = tk.Button(output_frame, text="Browse...", 
+                               command=self.select_output_file)
+        output_btn.pack(side="right")
+        
+        # Output format section
+        format_frame = tk.LabelFrame(self.root, text="Output Format", padx=10, pady=10)
+        format_frame.pack(fill="x", padx=20, pady=5)
+        
+        self.format_var = tk.StringVar(value="png")
+        format_label = tk.Label(format_frame, text="Convert to:")
+        format_label.pack(side="left")
+        
+        self.format_combo = ttk.Combobox(format_frame, textvariable=self.format_var,
+                                         values=self.output_formats, state="readonly", width=15)
+        self.format_combo.pack(side="left", padx=10)
+        self.format_combo.bind("<<ComboboxSelected>>", self.on_format_change)
+        
+        # Parameters section
+        self.params_frame = tk.LabelFrame(self.root, text="Conversion Parameters", 
+                                         padx=10, pady=10)
+        self.params_frame.pack(fill="both", expand=True, padx=20, pady=5)
+        
+        # Quality parameter (for JPEG, WebP)
+        quality_frame = tk.Frame(self.params_frame)
+        quality_frame.pack(fill="x", pady=5)
+        
+        tk.Label(quality_frame, text="Quality (1-100):").pack(side="left")
+        self.quality_var = tk.IntVar(value=95)
+        self.quality_scale = tk.Scale(quality_frame, from_=1, to=100, 
+                                      orient="horizontal", variable=self.quality_var,
+                                      length=300)
+        self.quality_scale.pack(side="left", padx=10)
+        self.quality_label = tk.Label(quality_frame, text="95")
+        self.quality_label.pack(side="left")
+        self.quality_var.trace("w", self.update_quality_label)
+        
+        # Compression level (for PNG)
+        compress_frame = tk.Frame(self.params_frame)
+        compress_frame.pack(fill="x", pady=5)
+        
+        tk.Label(compress_frame, text="Compression (0-9):").pack(side="left")
+        self.compress_var = tk.IntVar(value=6)
+        self.compress_scale = tk.Scale(compress_frame, from_=0, to=9, 
+                                       orient="horizontal", variable=self.compress_var,
+                                       length=300)
+        self.compress_scale.pack(side="left", padx=10)
+        self.compress_label = tk.Label(compress_frame, text="6")
+        self.compress_label.pack(side="left")
+        self.compress_var.trace("w", self.update_compress_label)
+        
+        # Resize options
+        resize_frame = tk.Frame(self.params_frame)
+        resize_frame.pack(fill="x", pady=5)
+        
+        self.resize_var = tk.BooleanVar(value=False)
+        self.resize_check = tk.Checkbutton(resize_frame, text="Resize Image", 
+                                           variable=self.resize_var,
+                                           command=self.toggle_resize)
+        self.resize_check.pack(side="left")
+        
+        tk.Label(resize_frame, text="Width:").pack(side="left", padx=(20, 5))
+        self.width_var = tk.StringVar(value="800")
+        self.width_entry = tk.Entry(resize_frame, textvariable=self.width_var, 
+                                    width=10, state="disabled")
+        self.width_entry.pack(side="left", padx=5)
+        
+        tk.Label(resize_frame, text="Height:").pack(side="left", padx=5)
+        self.height_var = tk.StringVar(value="600")
+        self.height_entry = tk.Entry(resize_frame, textvariable=self.height_var, 
+                                     width=10, state="disabled")
+        self.height_entry.pack(side="left", padx=5)
+        
+        self.maintain_aspect = tk.BooleanVar(value=True)
+        self.aspect_check = tk.Checkbutton(resize_frame, text="Maintain aspect ratio", 
+                                          variable=self.maintain_aspect, state="disabled")
+        self.aspect_check.pack(side="left", padx=10)
+        
+        # Format-specific info
+        self.info_label = tk.Label(self.params_frame, text="", 
+                                   fg="blue", wraplength=600, justify="left")
+        self.info_label.pack(pady=10)
+        
+        # Convert button
+        convert_btn = tk.Button(self.root, text="Convert", command=self.convert_image,
+                               bg="#4CAF50", fg="white", font=("Arial", 12, "bold"),
+                               padx=30, pady=10)
+        convert_btn.pack(pady=20)
+        
+        # Status bar
+        self.status_var = tk.StringVar(value="Ready")
+        status_bar = tk.Label(self.root, textvariable=self.status_var, 
+                             bd=1, relief="sunken", anchor="w")
+        status_bar.pack(side="bottom", fill="x")
+        
+        # Initial parameter visibility update
+        self.on_format_change()
+    
+    def update_quality_label(self, *args):
+        """Update quality label"""
+        self.quality_label.config(text=str(self.quality_var.get()))
+    
+    def update_compress_label(self, *args):
+        """Update compression label"""
+        self.compress_label.config(text=str(self.compress_var.get()))
+    
+    def toggle_resize(self):
+        """Toggle resize options"""
+        if self.resize_var.get():
+            self.width_entry.config(state="normal")
+            self.height_entry.config(state="normal")
+            self.aspect_check.config(state="normal")
+        else:
+            self.width_entry.config(state="disabled")
+            self.height_entry.config(state="disabled")
+            self.aspect_check.config(state="disabled")
+    
+    def on_format_change(self, event=None):
+        """Update parameter visibility based on selected format"""
+        format_type = self.format_var.get().lower()
+        
+        # Show/hide quality control
+        if format_type in ['jpg', 'jpeg', 'webp']:
+            self.quality_scale.config(state="normal")
+            self.info_label.config(text=f"Quality parameter applies to {format_type.upper()} format")
+        else:
+            self.quality_scale.config(state="disabled")
+        
+        # Show/hide compression control
+        if format_type == 'png':
+            self.compress_scale.config(state="normal")
+            self.info_label.config(text="Compression level 0 (no compression) to 9 (maximum compression)")
+        else:
+            self.compress_scale.config(state="disabled")
+        
+        # Special format info
+        if format_type in ['heif', 'heic']:
+            if HEIF_AVAILABLE:
+                self.info_label.config(text="HEIF/HEIC support enabled")
+            else:
+                self.info_label.config(text="HEIF/HEIC support not available (install pillow-heif)")
+        elif format_type == 'pdf':
+            if PDF_AVAILABLE:
+                self.info_label.config(text="PDF conversion enabled")
+            else:
+                self.info_label.config(text="PDF support not available (install reportlab)")
+        elif format_type == 'eps':
+            self.info_label.config(text="EPS format selected")
+    
+    def select_input_file(self):
+        """Open file dialog to select input file"""
+        filetypes = [
+            ("All Image Files", " ".join([f"*.{fmt}" for fmt in self.input_formats])),
+            ("PNG files", "*.png"),
+            ("JPEG files", "*.jpg *.jpeg"),
+            ("GIF files", "*.gif"),
+            ("BMP files", "*.bmp"),
+            ("TIFF files", "*.tiff *.tif"),
+            ("WebP files", "*.webp"),
+            ("All files", "*.*")
+        ]
+        
+        if HEIF_AVAILABLE:
+            filetypes.insert(-1, ("HEIF/HEIC files", "*.heif *.heic"))
+        if PSD_AVAILABLE:
+            filetypes.insert(-1, ("PSD files", "*.psd"))
+        if SVG_AVAILABLE:
+            filetypes.insert(-1, ("SVG files", "*.svg"))
+        
+        filename = filedialog.askopenfilename(
+            title="Select Input Image",
+            filetypes=filetypes
+        )
+        
+        if filename:
+            self.input_file = filename
+            self.input_label.config(text=filename)
+            self.status_var.set(f"Selected: {os.path.basename(filename)}")
+    
+    def select_output_file(self):
+        """Open file dialog to select output file"""
+        if not self.input_file:
+            messagebox.showwarning("Warning", "Please select an input file first")
+            return
+        
+        # Get default filename with new extension
+        input_dir = os.path.dirname(self.input_file)
+        input_basename = os.path.splitext(os.path.basename(self.input_file))[0]
+        default_name = f"{input_basename}.{self.format_var.get()}"
+        
+        filename = filedialog.asksaveasfilename(
+            title="Save As",
+            initialdir=input_dir,
+            initialfile=default_name,
+            defaultextension=f".{self.format_var.get()}",
+            filetypes=[
+                (f"{self.format_var.get().upper()} files", f"*.{self.format_var.get()}"),
+                ("All files", "*.*")
+            ]
+        )
+        
+        if filename:
+            self.output_file = filename
+            self.output_label.config(text=filename)
+            self.status_var.set(f"Output: {os.path.basename(filename)}")
+    
+    def convert_image(self):
+        """Convert the image"""
+        if not self.input_file:
+            messagebox.showerror("Error", "Please select an input file")
+            return
+        
+        if not os.path.exists(self.input_file):
+            messagebox.showerror("Error", "Input file does not exist")
+            return
+        
+        # Determine output file
+        if not self.output_file:
+            input_dir = os.path.dirname(self.input_file)
+            input_basename = os.path.splitext(os.path.basename(self.input_file))[0]
+            self.output_file = os.path.join(input_dir, 
+                                           f"{input_basename}.{self.format_var.get()}")
+        
+        try:
+            self.status_var.set("Converting...")
+            self.root.update()
+            
+            output_format = self.format_var.get().lower()
+            
+            # Load image based on input format
+            img = self.load_image(self.input_file)
+            
+            # Apply resize if needed
+            if self.resize_var.get():
+                try:
+                    target_width = int(self.width_var.get())
+                    target_height = int(self.height_var.get())
+                    
+                    if self.maintain_aspect.get():
+                        img.thumbnail((target_width, target_height), Image.Resampling.LANCZOS)
+                    else:
+                        img = img.resize((target_width, target_height), Image.Resampling.LANCZOS)
+                except ValueError:
+                    messagebox.showwarning("Warning", "Invalid width/height values. Skipping resize.")
+            
+            # Convert and save
+            self.save_image(img, self.output_file, output_format)
+            
+            self.status_var.set("Conversion successful!")
+            messagebox.showinfo("Success", 
+                              f"Image converted successfully!\nSaved to: {self.output_file}")
+            
+            # Reset output file for next conversion
+            self.output_file = ""
+            self.output_label.config(text="Auto (same as input location)")
+            
+        except Exception as e:
+            self.status_var.set("Conversion failed!")
+            messagebox.showerror("Error", f"Conversion failed:\n{str(e)}")
+    
+    def load_image(self, filepath):
+        """Load image from file, handling special formats"""
+        ext = os.path.splitext(filepath)[1].lower()[1:]
+        
+        # Handle HEIF/HEIC
+        if ext in ['heif', 'heic']:
+            if HEIF_AVAILABLE:
+                pillow_heif.register_heif_opener()
+                return Image.open(filepath)
+            else:
+                raise Exception("HEIF/HEIC support not available. Install pillow-heif.")
+        
+        # Handle PSD
+        elif ext == 'psd':
+            if PSD_AVAILABLE:
+                psd = PSDImage.open(filepath)
+                return psd.topil()
+            else:
+                raise Exception("PSD support not available. Install psd-tools.")
+        
+        # Handle SVG
+        elif ext == 'svg':
+            if SVG_AVAILABLE:
+                drawing = svg2rlg(filepath)
+                # Convert SVG to PNG in memory, then load as PIL Image
+                img_data = io.BytesIO()
+                renderPM.drawToFile(drawing, img_data, fmt='PNG')
+                img_data.seek(0)
+                return Image.open(img_data)
+            else:
+                raise Exception("SVG support not available. Install svglib.")
+        
+        # Handle PDF (extract first page)
+        elif ext == 'pdf':
+            raise Exception("PDF as input is not fully supported yet")
+        
+        # Standard formats
+        else:
+            img = Image.open(filepath)
+            # Convert to RGB if necessary (for formats that don't support transparency)
+            if img.mode in ('RGBA', 'LA', 'P'):
+                # Check if we need RGB or can keep RGBA
+                if ext in ['jpg', 'jpeg', 'bmp']:
+                    # Create a white background
+                    background = Image.new('RGB', img.size, (255, 255, 255))
+                    if img.mode == 'P':
+                        img = img.convert('RGBA')
+                    background.paste(img, mask=img.split()[-1] if img.mode in ('RGBA', 'LA') else None)
+                    return background
+            return img
+    
+    def save_image(self, img, filepath, output_format):
+        """Save image to file with appropriate parameters"""
+        output_format = output_format.lower()
+        
+        # Handle JPEG
+        if output_format in ['jpg', 'jpeg']:
+            # Convert to RGB if needed
+            if img.mode in ('RGBA', 'LA', 'P'):
+                background = Image.new('RGB', img.size, (255, 255, 255))
+                if img.mode == 'P':
+                    img = img.convert('RGBA')
+                if img.mode in ('RGBA', 'LA'):
+                    background.paste(img, mask=img.split()[-1])
+                else:
+                    background.paste(img)
+                img = background
+            img.save(filepath, 'JPEG', quality=self.quality_var.get(), optimize=True)
+        
+        # Handle PNG
+        elif output_format == 'png':
+            img.save(filepath, 'PNG', compress_level=self.compress_var.get())
+        
+        # Handle WebP
+        elif output_format == 'webp':
+            img.save(filepath, 'WEBP', quality=self.quality_var.get())
+        
+        # Handle HEIF/HEIC
+        elif output_format in ['heif', 'heic']:
+            if HEIF_AVAILABLE:
+                pillow_heif.register_heif_opener()
+                img.save(filepath, 'HEIF', quality=self.quality_var.get())
+            else:
+                raise Exception("HEIF/HEIC support not available. Install pillow-heif.")
+        
+        # Handle PDF
+        elif output_format == 'pdf':
+            if PDF_AVAILABLE:
+                # Convert to RGB if needed
+                if img.mode in ('RGBA', 'LA', 'P'):
+                    background = Image.new('RGB', img.size, (255, 255, 255))
+                    if img.mode == 'P':
+                        img = img.convert('RGBA')
+                    if img.mode in ('RGBA', 'LA'):
+                        background.paste(img, mask=img.split()[-1])
+                    else:
+                        background.paste(img)
+                    img = background
+                
+                # Save image to PDF
+                c = canvas.Canvas(filepath, pagesize=(img.width, img.height))
+                # Save image to bytes
+                img_buffer = io.BytesIO()
+                img.save(img_buffer, format='PNG')
+                img_buffer.seek(0)
+                c.drawImage(ImageReader(img_buffer), 0, 0, width=img.width, height=img.height)
+                c.save()
+            else:
+                raise Exception("PDF support not available. Install reportlab.")
+        
+        # Handle EPS
+        elif output_format == 'eps':
+            # Convert to RGB if needed
+            if img.mode in ('RGBA', 'LA', 'P'):
+                background = Image.new('RGB', img.size, (255, 255, 255))
+                if img.mode == 'P':
+                    img = img.convert('RGBA')
+                if img.mode in ('RGBA', 'LA'):
+                    background.paste(img, mask=img.split()[-1])
+                else:
+                    background.paste(img)
+                img = background
+            img.save(filepath, 'EPS')
+        
+        # Handle TIFF
+        elif output_format in ['tiff', 'tif']:
+            img.save(filepath, 'TIFF')
+        
+        # Handle GIF
+        elif output_format == 'gif':
+            # Convert to P mode (palette) for GIF
+            if img.mode not in ('P', 'L'):
+                img = img.convert('P', palette=Image.ADAPTIVE)
+            img.save(filepath, 'GIF')
+        
+        # Handle BMP
+        elif output_format == 'bmp':
+            # Convert to RGB if needed
+            if img.mode in ('RGBA', 'LA', 'P'):
+                background = Image.new('RGB', img.size, (255, 255, 255))
+                if img.mode == 'P':
+                    img = img.convert('RGBA')
+                if img.mode in ('RGBA', 'LA'):
+                    background.paste(img, mask=img.split()[-1])
+                else:
+                    background.paste(img)
+                img = background
+            img.save(filepath, 'BMP')
+        
+        # Handle ICO
+        elif output_format == 'ico':
+            img.save(filepath, 'ICO')
+        
+        # Default
+        else:
+            img.save(filepath)
+
+
+def main():
+    """Main function to run the application"""
+    root = tk.Tk()
+    app = ImageConverterApp(root)
+    root.mainloop()
+
+
+if __name__ == "__main__":
+    main()
