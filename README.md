@@ -129,6 +129,23 @@ python image_converter.py
 
 MIT License
 
+## Testing
+
+To verify the application structure without installing all dependencies:
+```bash
+python3 verify_structure.py
+```
+
+This checks:
+- Python syntax validity
+- Code structure (classes, methods, functions)
+- Required imports and files
+
+For batch conversion examples without GUI:
+```bash
+python3 example_batch.py
+```
+
 ## Development
 
 This application uses:
