@@ -42,9 +42,10 @@ class ImageConverterApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Simple Image Converter")
-        self.root.geometry("700x650")
+        self.root.geometry("500x550")
 
         self.input_file = ""
+        self.input_file_ext = "ファイルが未入力…"
         self.output_file = ""
 
         # Supported formats
@@ -75,7 +76,7 @@ class ImageConverterApp:
         title_label.pack(pady=10)
 
         # Input file section
-        input_frame = tk.LabelFrame(self.root, text="入力ファイル", padx=10, pady=10)
+        input_frame = tk.LabelFrame(self.root, text="入力ファイル", padx=10, pady=5)
         input_frame.pack(fill="x", padx=20, pady=5)
 
         self.input_label = tk.Label(
@@ -95,7 +96,7 @@ class ImageConverterApp:
         output_frame = tk.LabelFrame(
             self.root,
             text="出力先(オプション)",
-            padx=10, pady=10)
+            padx=10, pady=5)
         output_frame.pack(fill="x", padx=20, pady=5)
 
         self.output_label = tk.Label(
@@ -116,8 +117,12 @@ class ImageConverterApp:
         format_frame.pack(fill="x", padx=20, pady=5)
 
         self.format_var = tk.StringVar(value="png")
-        format_label = tk.Label(format_frame, text="変換先:")
-        format_label.pack(side="left")
+        input_format = tk.Label(format_frame, text=self.input_file_ext.upper())
+        input_format.pack(anchor="center",expand=True, side="left")
+
+        self.format_arrow = tk.Label(format_frame, text="  →  ")
+        self.format_arrow.pack(anchor="center", expand=True, side="left")
+
 
         self.format_combo = ttk.Combobox(
             format_frame,
@@ -126,7 +131,7 @@ class ImageConverterApp:
             state="readonly",
             width=15
         )
-        self.format_combo.pack(side="left", padx=10)
+        self.format_combo.pack(anchor="center", expand=True, side="left", padx=10)
         self.format_combo.bind("<<ComboboxSelected>>", self.on_format_change)
 
         # Parameters section
@@ -211,9 +216,9 @@ class ImageConverterApp:
         convert_btn = tk.Button(
             self.root, text="変換", command=self.convert_image,
             bg="#4CAF50", fg="white", font=("Arial", 12, "bold"),
-            padx=30, pady=10
+            padx=10, pady=10,
         )
-        convert_btn.pack(pady=20)
+        convert_btn.pack(fill="x",pady=10, padx=20)
 
         # Status bar
         self.status_var = tk.StringVar(value="準備完了")
@@ -305,6 +310,10 @@ class ImageConverterApp:
 
         if filename:
             self.input_file = filename
+            self.input_file_ext = os.path.splitext(filename)[1].lower()[1:]
+            # Update input format label
+            # setup_ui.input_format.config(text=self.input_file_ext.upper())
+            
             self.input_label.config(text=filename)
             self.status_var.set(f"Selected: {os.path.basename(filename)}")
 
