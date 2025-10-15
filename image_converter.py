@@ -42,10 +42,11 @@ class ImageConverterApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Simple Image Converter")
-        self.root.geometry("500x550")
+        self.root.geometry("600x550")
+        self.root.resizable(True,True)
 
         self.input_file = ""
-        self.input_file_ext = "ファイルが未入力…"
+        self.input_file_ext = "ファイル未入力…"
         self.output_file = ""
 
         # Supported formats
@@ -117,8 +118,8 @@ class ImageConverterApp:
         format_frame.pack(fill="x", padx=20, pady=5)
 
         self.format_var = tk.StringVar(value="png")
-        input_format = tk.Label(format_frame, text=self.input_file_ext.upper())
-        input_format.pack(anchor="center",expand=True, side="left")
+        self.input_format = tk.Label(format_frame, text=self.input_file_ext.upper())
+        self.input_format.pack(anchor="center",expand=True, side="left")
 
         self.format_arrow = tk.Label(format_frame, text="  →  ")
         self.format_arrow.pack(anchor="center", expand=True, side="left")
@@ -138,13 +139,13 @@ class ImageConverterApp:
         self.params_frame = tk.LabelFrame(
             self.root,
             text="パラメータ",
-            padx=10, pady=10
+            padx=10, pady=5
         )
         self.params_frame.pack(fill="both", expand=True, padx=20, pady=5)
 
         # Quality parameter (for JPEG, WebP)
         quality_frame = tk.Frame(self.params_frame)
-        quality_frame.pack(fill="x", pady=5)
+        quality_frame.pack(fill="x", pady=2.5)
 
         tk.Label(quality_frame, text="品質 (1-100):").pack(side="left")
         self.quality_var = tk.IntVar(value=95)
@@ -175,7 +176,7 @@ class ImageConverterApp:
 
         # Resize options
         resize_frame = tk.Frame(self.params_frame)
-        resize_frame.pack(fill="x", pady=5)
+        resize_frame.pack(fill="x", pady=2.5)
 
         self.resize_var = tk.BooleanVar(value=False)
         self.resize_check = tk.Checkbutton(
@@ -210,7 +211,7 @@ class ImageConverterApp:
         self.info_label = tk.Label(
             self.params_frame, text="",
             fg="blue", wraplength=600, justify="left")
-        self.info_label.pack(pady=10)
+        self.info_label.pack(pady=5)
 
         # Convert button
         convert_btn = tk.Button(
@@ -223,12 +224,16 @@ class ImageConverterApp:
         # Status bar
         self.status_var = tk.StringVar(value="準備完了")
         status_bar = tk.Label(
-            self.root, textvariable=self.status_var, 
+            self.root, textvariable=self.status_var,
             bd=1, relief="sunken", anchor="w")
         status_bar.pack(side="bottom", fill="x")
 
         # Initial parameter visibility update
         self.on_format_change()
+
+        # update window
+        # self.input_format.config(text= self.input_file_ext.upper())
+        # self.root.update()
 
     def update_quality_label(self, *args):
         """Update quality label"""
@@ -311,9 +316,7 @@ class ImageConverterApp:
         if filename:
             self.input_file = filename
             self.input_file_ext = os.path.splitext(filename)[1].lower()[1:]
-            # Update input format label
-            # setup_ui.input_format.config(text=self.input_file_ext.upper())
-            
+            self.input_format.config(text=self.input_file_ext)
             self.input_label.config(text=filename)
             self.status_var.set(f"Selected: {os.path.basename(filename)}")
 
