@@ -9,6 +9,9 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 from PIL import Image
 import io
+import pystray
+from pystray import MenuItem as item
+import threading
 
 # Try to import optional libraries
 try:
@@ -48,6 +51,11 @@ class ImageConverterApp:
         self.input_file = ""
         self.input_file_ext = "ファイル未入力…"
         self.output_file = ""
+        
+        # トレイアイコン関連
+        self.tray_icon = None
+        self.tray_thread = None
+        self.is_hidden = False
 
         # Supported formats
         self.input_formats = ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'tiff', 'webp', 'ico', 'eps']
@@ -66,6 +74,8 @@ class ImageConverterApp:
         if PDF_AVAILABLE:
             self.output_formats.append('pdf')
         self.setup_ui()
+        self.setup_tray()
+        self.setup_window_events()
 
     def setup_ui(self):
         """Setup the user interface"""
@@ -557,6 +567,49 @@ class ImageConverterApp:
         # Default
         else:
             img.save(filepath)
+
+    def setup_tray(self):
+        """トレイアイコンを設定"""
+        # シンプルなアイコン画像を作成
+        icon_image = Image.new('RGB', (64, 64), color='blue')
+
+        # トレイメニューを作成
+        menu = pystray.Menu(
+            item('表示', self.show_window, default=True),
+            item('終了', self.quit_app)
+        )
+
+        # トレイアイコンを作成（クリック時の動作も設定）
+        self.tray_icon = pystray.Icon("ImageConverter", icon_image, "Simple Image Converter", menu)
+        self.tray_icon.default_action = self.show_window  # アイコンクリック時のデフォルト動作
+
+        # トレイアイコンを別スレッドで実行
+        self.tray_thread = threading.Thread(target=self.tray_icon.run, daemon=True)
+        self.tray_thread.start()
+
+    def setup_window_events(self):
+        """ウィンドウイベントを設定"""
+        # ウィンドウの閉じるボタンが押された時の処理
+        self.root.protocol("WM_DELETE_WINDOW", self.hide_to_tray)
+
+    def hide_to_tray(self):
+        """ウィンドウをトレイに隠す"""
+        self.root.withdraw()  # ウィンドウを隠す
+        self.is_hidden = True
+
+    def show_window(self, icon=None, item=None):
+        """ウィンドウを表示"""
+        self.root.deiconify()  # ウィンドウを表示
+        self.root.lift()  # 最前面に表示
+        self.root.focus_force()  # フォーカスを取得
+        self.is_hidden = False
+
+    def quit_app(self, icon=None, item=None):
+        """アプリケーションを終了"""
+        if self.tray_icon:
+            self.tray_icon.stop()
+        self.root.quit()
+        self.root.destroy()
 
 
 def main():
