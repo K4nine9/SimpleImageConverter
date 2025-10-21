@@ -96,7 +96,7 @@ python image_converter.py
 
 ダウンロードした`image_converter.exe`を実行してください。
 
-初回起動には時間がかかることがあります。
+※起動には時間がかかります. Pythonをexe化している関係で…
 
 ## アプリの操作
 
