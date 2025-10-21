@@ -687,8 +687,9 @@ class ImageConverterApp:
             icon_image = Image.new('RGB', (32, 32), color='blue')
 
         # トレイメニューを作成
+        show_label = '表示(Ctrl+Shift+I)' if PYNPUT_AVAILABLE else '表示'
         menu_items = [
-            item('表示(Ctrl+Shift+I)', self.show_window, default=True) if PYNPUT_AVAILABLE else item('表示', self.show_window, default=True),
+            item(show_label, self.show_window, default=True),
             item('終了', self.quit_app),
         ]
 
