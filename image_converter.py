@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Simple Image Converter Application
+Imageflow - Simple Image Converter Application
 Converts between various image formats including png, jpeg, webp, eps, pdf, tiff, bmp, svg, heif/heic, psd, gif
 """
 
@@ -44,7 +44,7 @@ except ImportError:
 class ImageConverterApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("Simple Image Converter")
+        self.root.title("Imageflow - Simple Image Converter")
         self.root.geometry("600x550")
         self.root.resizable(True,True)
 
@@ -82,56 +82,60 @@ class ImageConverterApp:
         # Title
         title_label = tk.Label(
             self.root,
-            text="Simple Image Converter",
-            font=("Arial", 18, "bold"))
-        title_label.pack(pady=10)
+            text="Imageflow - Simple Image Converter",
+            font=("M PLUS 2", 18, "bold"))
+        title_label.pack(pady=2)
 
         # Input file section
-        input_frame = tk.LabelFrame(self.root, text="入力ファイル", padx=10, pady=5)
+        input_frame = tk.LabelFrame(self.root, text="入力ファイル", padx=10, pady=5, font=("M PLUS 2", 10))
         input_frame.pack(fill="x", padx=20, pady=5)
 
         self.input_label = tk.Label(
             input_frame,
             text="ファイルが選択されていません…",
             wraplength=500,
-            justify="left")
+            justify="left",
+            font=("M PLUS 2", 10))
         self.input_label.pack(side="left", fill="x", expand=True)
 
         input_btn = tk.Button(
             input_frame,
             text="ブラウズ…",
-            command=self.select_input_file)
+            command=self.select_input_file,
+            font=("M PLUS 2", 10))
         input_btn.pack(side="right")
 
         # Output file section
         output_frame = tk.LabelFrame(
             self.root,
             text="出力先(オプション)",
-            padx=10, pady=5)
+            padx=10, pady=5, font=("M PLUS 2", 10))
         output_frame.pack(fill="x", padx=20, pady=5)
 
         self.output_label = tk.Label(
             output_frame,
             text="自動(入力ディレクトリと同じ)",
             wraplength=500,
-            justify="left")
+            justify="left",
+            font=("M PLUS 2", 10))
         self.output_label.pack(side="left", fill="x", expand=True)
 
         output_btn = tk.Button(
             output_frame,
             text="ブラウズ…",
-            command=self.select_output_file)
+            command=self.select_output_file,
+            font=("M PLUS 2", 10))
         output_btn.pack(side="right")
 
         # Output format section
-        format_frame = tk.LabelFrame(self.root, text="出力形式", padx=10, pady=10)
+        format_frame = tk.LabelFrame(self.root, text="出力形式", padx=10, pady=10, font=("M PLUS 2", 10))
         format_frame.pack(fill="x", padx=20, pady=5)
 
         self.format_var = tk.StringVar(value="png")
-        self.input_format = tk.Label(format_frame, text=self.input_file_ext.upper())
+        self.input_format = tk.Label(format_frame, text=self.input_file_ext.upper(), font=("M PLUS 2", 10))
         self.input_format.pack(anchor="center",expand=True, side="left")
 
-        self.format_arrow = tk.Label(format_frame, text="  →  ")
+        self.format_arrow = tk.Label(format_frame, text="  →  ", font=("M PLUS 2", 10))
         self.format_arrow.pack(anchor="center", expand=True, side="left")
 
 
@@ -149,7 +153,7 @@ class ImageConverterApp:
         self.params_frame = tk.LabelFrame(
             self.root,
             text="パラメータ",
-            padx=10, pady=5
+            padx=10, pady=5, font=("M PLUS 2", 10)
         )
         self.params_frame.pack(fill="both", expand=True, padx=20, pady=5)
 
@@ -157,32 +161,32 @@ class ImageConverterApp:
         quality_frame = tk.Frame(self.params_frame)
         quality_frame.pack(fill="x", pady=2.5)
 
-        tk.Label(quality_frame, text="品質 (1-100):").pack(side="left")
+        tk.Label(quality_frame, text="品質 (1-100):", font=("M PLUS 2", 10)).pack(side="left")
         self.quality_var = tk.IntVar(value=95)
         self.quality_scale = tk.Scale(
             quality_frame, from_=1, to=100,
             orient="horizontal", variable=self.quality_var,
-            length=300
+            length=300, font=("M PLUS 2", 9)
         )
         self.quality_scale.pack(side="left", padx=10)
-        self.quality_label = tk.Label(quality_frame, text="95")
+        self.quality_label = tk.Label(quality_frame, text="95", font=("M PLUS 2", 10))
         self.quality_label.pack(side="left")
-        self.quality_var.trace("w", self.update_quality_label)
+        self.quality_var.trace_add("write", self.update_quality_label)
 
         # Compression level (for PNG)
         compress_frame = tk.Frame(self.params_frame)
         compress_frame.pack(fill="x", pady=5)
 
-        tk.Label(compress_frame, text="圧縮度 (0-9):").pack(side="left")
+        tk.Label(compress_frame, text="圧縮度 (0-9):", font=("M PLUS 2", 10)).pack(side="left")
         self.compress_var = tk.IntVar(value=6)
         self.compress_scale = tk.Scale(
             compress_frame, from_=0, to=9,
             orient="horizontal", variable=self.compress_var,
-            length=300)
+            length=300, font=("M PLUS 2", 9))
         self.compress_scale.pack(side="left", padx=10)
-        self.compress_label = tk.Label(compress_frame, text="6")
+        self.compress_label = tk.Label(compress_frame, text="6", font=("M PLUS 2", 10))
         self.compress_label.pack(side="left")
-        self.compress_var.trace("w", self.update_compress_label)
+        self.compress_var.trace_add("write", self.update_compress_label)
 
         # Resize options
         resize_frame = tk.Frame(self.params_frame)
@@ -192,41 +196,46 @@ class ImageConverterApp:
         self.resize_check = tk.Checkbutton(
             resize_frame, text="画像のリサイズ",
             variable=self.resize_var,
-            command=self.toggle_resize)
+            command=self.toggle_resize,
+            font=("M PLUS 2", 10))
         self.resize_check.pack(side="left")
 
-        tk.Label(resize_frame, text="幅:").pack(side="left", padx=(20, 5))
+        tk.Label(resize_frame, text="幅:", font=("M PLUS 2", 10)).pack(side="left", padx=(20, 5))
         self.width_var = tk.StringVar(value="800")
         self.width_entry = tk.Entry(
             resize_frame,
             textvariable=self.width_var,
-            width=10, state="disabled")
+            width=10, state="disabled",
+            font=("M PLUS 2", 10))
         self.width_entry.pack(side="left", padx=5)
 
-        tk.Label(resize_frame, text="高さ:").pack(side="left", padx=5)
+        tk.Label(resize_frame, text="高さ:", font=("M PLUS 2", 10)).pack(side="left", padx=5)
         self.height_var = tk.StringVar(value="600")
         self.height_entry = tk.Entry(
             resize_frame,
             textvariable=self.height_var,
-        width=10, state="disabled")
+            width=10, state="disabled",
+            font=("M PLUS 2", 10))
         self.height_entry.pack(side="left", padx=5)
 
         self.maintain_aspect = tk.BooleanVar(value=True)
         self.aspect_check = tk.Checkbutton(
             resize_frame, text="アスペクト比を維持",
-            variable=self.maintain_aspect, state="disabled")
+            variable=self.maintain_aspect, state="disabled",
+            font=("M PLUS 2", 10))
         self.aspect_check.pack(side="left", padx=10)
 
         # Format-specific info
         self.info_label = tk.Label(
             self.params_frame, text="",
-            fg="blue", wraplength=600, justify="left")
+            fg="blue", wraplength=600, justify="left",
+            font=("M PLUS 2", 9))
         self.info_label.pack(pady=5)
 
         # Convert button
         convert_btn = tk.Button(
             self.root, text="変換", command=self.convert_image,
-            bg="#4CAF50", fg="white", font=("Arial", 12, "bold"),
+            bg="#4CAF50", fg="white", font=("M PLUS 2", 12, "bold"),
             padx=10, pady=10,
         )
         convert_btn.pack(fill="x",pady=10, padx=20)
@@ -235,7 +244,8 @@ class ImageConverterApp:
         self.status_var = tk.StringVar(value="準備完了")
         status_bar = tk.Label(
             self.root, textvariable=self.status_var,
-            bd=1, relief="sunken", anchor="w")
+            bd=1, relief="sunken", anchor="w",
+            font=("M PLUS 2", 9))
         status_bar.pack(side="bottom", fill="x")
 
         # Initial parameter visibility update
@@ -570,8 +580,18 @@ class ImageConverterApp:
 
     def setup_tray(self):
         """トレイアイコンを設定"""
-        # シンプルなアイコン画像を作成
-        icon_image = Image.new('RGB', (64, 64), color='blue')
+        # icon.pngファイルを読み込み
+        try:
+            icon_image = Image.open('icon.png')
+            # 32x32にリサイズ（トレイアイコンに適したサイズ）
+            icon_image = icon_image.resize((32, 32), Image.Resampling.LANCZOS)
+        except FileNotFoundError:
+            # icon.pngが見つからない場合は、デフォルトの青いアイコンを作成
+            icon_image = Image.new('RGB', (32, 32), color='blue')
+        except Exception as e:
+            # その他のエラーの場合も、デフォルトの青いアイコンを作成
+            print(f"アイコンファイルの読み込みに失敗しました: {e}")
+            icon_image = Image.new('RGB', (32, 32), color='blue')
 
         # トレイメニューを作成
         menu = pystray.Menu(
@@ -580,7 +600,7 @@ class ImageConverterApp:
         )
 
         # トレイアイコンを作成（クリック時の動作も設定）
-        self.tray_icon = pystray.Icon("ImageConverter", icon_image, "Simple Image Converter", menu)
+        self.tray_icon = pystray.Icon("ImageConverter", icon_image, "Imageflow", menu)
         self.tray_icon.default_action = self.show_window  # アイコンクリック時のデフォルト動作
 
         # トレイアイコンを別スレッドで実行
