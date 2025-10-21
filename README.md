@@ -1,34 +1,40 @@
-# SimpleImageConverter
+# Imageflow - シンプル画像変換アプリケーション
 
-Simple image converter application with Python and Tkinter GUI.
+PythonとTkinterを使用したシンプルな画像変換アプリケーションです。
 
-## Features
+## 主な機能
 
-- **Multiple Format Support**: Convert between various image formats including:
-  - PNG, JPEG, WebP, EPS, PDF, TIFF, BMP, GIF, ICO
-  - HEIF/HEIC (with pillow-heif)
-  - SVG (with svglib)
-  - PSD (with psd-tools)
+- **多形式対応**
+  - 様々な画像形式間での変換をサポート
+    - PNG, JPEG, WebP, EPS, PDF, TIFF, BMP, GIF, ICO
+    - HEIF/HEIC
+    - SVG
+    - PSD
 
-- **Graphical User Interface**: Easy-to-use Tkinter-based GUI
-  - File browser for selecting input/output files
-  - Format selection dropdown
-  - Automatic output to input file location if no output specified
+- **シンプルなインタフェース**
+  - 入力・出力ファイルのブラウズ機能
+  - 形式選択ドロップダウン
+  - 出力先が指定されない場合は入力ファイルと同じ場所に自動保存
 
-- **Conversion Parameters**:
-  - Quality control for JPEG and WebP (1-100)
-  - Compression level for PNG (0-9)
-  - Image resize options with aspect ratio maintenance
-  - Format-specific parameters displayed dynamically
+- **変換パラメータの操作機能**
+  - JPEG・WebP用の品質制御 (1-100)
+  - PNG用の圧縮レベル (0-9)
+  - アスペクト比を維持した画像リサイズ機能
+  - 選択した形式に応じて動的に表示されるパラメータ
 
-## Requirements
+- **システムトレイ対応**
+  - 閉じるボタンを押すとシステムトレイで待機します
+  - システムトレイで待機中に`Ctrl + Shift + I`で呼び出せます
+  - トレイアイコンを右クリック→終了で完全終了できます
 
-- Python 3.7 or higher
-- tkinter (usually included with Python)
+## 必要要件
 
-## Installation
+- Python 3.7以上
+- tkinter (通常Pythonに含まれています)
 
-### Quick Setup (Recommended)
+## インストール
+
+### クイックセットアップ（推奨）
 
 #### Linux/Mac:
 ```bash
@@ -41,14 +47,14 @@ chmod +x setup_venv.sh
 setup_venv.bat
 ```
 
-### Manual Setup
+### 手動セットアップ
 
-1. Create a virtual environment:
+1. 仮想環境を作成:
 ```bash
 python3 -m venv venv
 ```
 
-2. Activate the virtual environment:
+2. 仮想環境をアクティベート:
 
 **Linux/Mac:**
 ```bash
@@ -60,96 +66,138 @@ source venv/bin/activate
 venv\Scripts\activate.bat
 ```
 
-3. Install dependencies:
+3. 依存関係をインストール:
 ```bash
 pip install -r requirements.txt
 ```
 
-## Usage
+## 使用方法
 
-1. Activate the virtual environment (if not already activated):
+### コードを直接実行する
+
+1. 仮想環境をアクティベート（まだの場合）:
 ```bash
 source venv/bin/activate  # Linux/Mac
 venv\Scripts\activate.bat  # Windows
 ```
 
-2. Run the application:
+2. アプリケーションを実行:
 ```bash
 python image_converter.py
 ```
 
-3. In the GUI:
-   - Click "Browse..." in the Input File section to select an image
-   - Select the output format from the dropdown
-   - (Optional) Click "Browse..." in the Output File section to specify output location
-   - Adjust conversion parameters as needed:
-     - Quality for JPEG/WebP formats
-     - Compression for PNG format
-     - Resize options if needed
-   - Click "Convert" to convert the image
+### ビルド済みファイルを使う
 
-## Supported Conversions
+1. バイナリのダウンロード
 
-### Input Formats
-- Standard: PNG, JPEG, GIF, BMP, TIFF, WebP, ICO
-- Optional (with libraries): HEIF/HEIC, SVG, PSD
+リリースから最新バージョンの`image_converter.exe`をダウンロードする
 
-### Output Formats
-- Standard: PNG, JPEG, GIF, BMP, TIFF, WebP, ICO, EPS
-- Optional (with libraries): HEIF/HEIC, PDF
+2. 実行する
 
-## Parameters
+ダウンロードした`image_converter.exe`を実行してください。
 
-### Quality (1-100)
-- Applies to: JPEG, WebP, HEIF/HEIC
-- Higher values = better quality, larger file size
-- Default: 95
+初回起動には時間がかかることがあります。
 
-### Compression (0-9)
-- Applies to: PNG
-- Higher values = more compression, smaller file size
-- Default: 6
+## アプリの操作
 
-### Resize
-- Optional image resizing with width and height
-- Can maintain aspect ratio (thumbnail) or stretch to exact dimensions
+1. 入力ファイルセクションの「ブラウズ…」をクリックして画像を選択
+2. ドロップダウンから出力形式を選択
+3. （オプション）出力ファイルセクションの「ブラウズ…」をクリックして出力先を指定
+4. 必要に応じて変換パラメータを調整:
+     - JPEG/WebP形式の品質
+     - PNG形式の圧縮レベル
+     - 必要に応じてリサイズオプション
+5. 「変換」ボタンをクリックして画像を変換
 
-## Dependencies
+- 閉じるボタンを押しても終了せず，システムトレイで待機します．
+- システムトレイで待機中は，アイコンを左クリックするか`Ctrl+Shift+I`で再度開けます.
+- メニューバーの設定→終了か`Ctrl+Q`で終了できます.
 
-### Required
-- Pillow: Core image processing library
+## 対応変換形式
 
-### Optional
-- pillow-heif: HEIF/HEIC format support
-- reportlab: PDF output support
-- svglib: SVG input support
-- psd-tools: PSD input support
+### 入力形式
+- PNG
+- JPEG
+- GIF
+- BMP
+- TIFF
+- WebP
+- ICO
+- EPS
+- HEIF/HEIC
+- PDF
+- SVG
+- PSD
 
-## License
+### 出力形式
+- PNG
+- JPEG
+- GIF
+- BMP
+- TIFF
+- WebP
+- ICO
+- EPS
+- HEIF/HEIC
+- PDF
 
-MIT License
+**注意**: SVGとPSDは入力のみ対応しています．
 
-## Testing
+## パラメータ
 
-To verify the application structure without installing all dependencies:
-```bash
-python3 verify_structure.py
-```
+画像の出力形式によっては，一部のパラメータを変更できます．
 
-This checks:
-- Python syntax validity
-- Code structure (classes, methods, functions)
-- Required imports and files
+### 品質 (1-100)
+- 適用形式: JPEG, WebP, HEIF/HEIC
+- 高い値で高品質になり，ファイルサイズも大きくなります．
+  - JPEGに関しては，低品質だとノイズがすごいことになります．適当に高い値を設定することを推奨します．
+- デフォルト値: 95
 
-For batch conversion examples without GUI:
+### 圧縮度 (0-9)
+- 適用形式: PNG
+- 高い値で項圧縮になり，ファイルサイズは小さくなります．
+- デフォルト値: 6
+
+### リサイズ
+- 幅と高さを指定して画像を引き伸ばしたり縮めたりできます．
+- 「アスペクト比を維持する」にチェックを入れるとアス比が保持されます．
+
+## 依存関係
+
+### 必須
+- Pillow: コア画像処理ライブラリ
+
+### オプション
+- pillow-heif: HEIF/HEIC形式サポート
+- reportlab: PDF出力サポート
+- svglib: SVG入力サポート
+- psd-tools: PSD入力サポート
+
+## ライセンス
+
+**MIT License** を採用しています
+- このソフトは誰でも無償で使用できます
+- そのままor改変して再配布できます
+- 再配布するときは`LICENSE`の内容をそのまま転記してください(著作者表示とライセンス表示を継承してください)
+- このソフトを使用したこと，あるいはそれによる一切の結果に関して，K4nin9は責任を負いません
+
+## テスト
+
+GUIを使わないバッチ変換のテストは次から実行できます
 ```bash
 python3 example_batch.py
 ```
 
-## Development
+## 開発
 
-This application uses:
-- Python 3 for development
-- Virtual environment (venv) for dependency isolation
-- Tkinter for the graphical interface
-- Pillow (PIL) as the core image processing library
+このアプリケーションは以下を使用しています:
+- Python 3.10.0 での開発
+- 依存関係の分離のための仮想環境（venv）
+- グラフィカルインターフェース用のTkinter
+- コア画像処理ライブラリとしてのPillow（PIL）
+
+## システムトレイ機能
+
+- ウィンドウを閉じてもアプリケーションは終了せず、システムトレイに常駐
+- トレイアイコンをクリックまたは右クリックメニューからウィンドウを再表示
+- 完全に終了するにはトレイメニューから「終了」を選択

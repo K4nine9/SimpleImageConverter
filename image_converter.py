@@ -13,6 +13,13 @@ import pystray
 from pystray import MenuItem as item
 import threading
 
+# Try to import pynput for global hotkeys
+try:
+    from pynput import keyboard
+    PYNPUT_AVAILABLE = True
+except ImportError:
+    PYNPUT_AVAILABLE = False
+
 # Try to import optional libraries
 try:
     import pillow_heif
@@ -56,6 +63,10 @@ class ImageConverterApp:
         self.tray_icon = None
         self.tray_thread = None
         self.is_hidden = False
+        
+        # ホットキー関連
+        self.hotkey_listener = None
+        self.hotkey_thread = None
 
         # Supported formats
         self.input_formats = ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'tiff', 'webp', 'ico', 'eps']
@@ -76,9 +87,13 @@ class ImageConverterApp:
         self.setup_ui()
         self.setup_tray()
         self.setup_window_events()
+        self.setup_hotkey()
 
     def setup_ui(self):
         """Setup the user interface"""
+        # Menu bar
+        self.create_menu_bar()
+        
         # Title
         title_label = tk.Label(
             self.root,
@@ -208,6 +223,7 @@ class ImageConverterApp:
             width=10, state="disabled",
             font=("M PLUS 2", 10))
         self.width_entry.pack(side="left", padx=5)
+        self.width_var.trace_add("write", self.on_width_change)
 
         tk.Label(resize_frame, text="高さ:", font=("M PLUS 2", 10)).pack(side="left", padx=5)
         self.height_var = tk.StringVar(value="600")
@@ -217,6 +233,7 @@ class ImageConverterApp:
             width=10, state="disabled",
             font=("M PLUS 2", 10))
         self.height_entry.pack(side="left", padx=5)
+        self.height_var.trace_add("write", self.on_height_change)
 
         self.maintain_aspect = tk.BooleanVar(value=True)
         self.aspect_check = tk.Checkbutton(
@@ -224,6 +241,10 @@ class ImageConverterApp:
             variable=self.maintain_aspect, state="disabled",
             font=("M PLUS 2", 10))
         self.aspect_check.pack(side="left", padx=10)
+        
+        # アスペクト比を保存する変数
+        self.original_aspect_ratio = None
+        self.is_updating_dimensions = False  # 無限ループを防ぐフラグ
 
         # Format-specific info
         self.info_label = tk.Label(
@@ -255,6 +276,29 @@ class ImageConverterApp:
         # self.input_format.config(text= self.input_file_ext.upper())
         # self.root.update()
 
+    def create_menu_bar(self):
+        """メニューバーを作成"""
+        menubar = tk.Menu(self.root)
+        self.root.config(menu=menubar)
+        
+        # ファイルメニュー
+        file_menu = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label="設定", menu=file_menu)
+        
+        # 終了オプション
+        file_menu.add_command(label="終了", command=self.force_quit, accelerator="Ctrl+Q")
+        
+        # ヘルプメニュー
+        help_menu = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label="ヘルプ", menu=help_menu)
+        
+        # ショートカットキー情報
+        if PYNPUT_AVAILABLE:
+            help_menu.add_command(label="ショートカットキー", command=self.show_shortcuts)
+        
+        # キーボードショートカットをバインド
+        self.root.bind('<Control-q>', lambda event: self.force_quit())
+
     def update_quality_label(self, *args):
         """Update quality label"""
         self.quality_label.config(text=str(self.quality_var.get()))
@@ -262,6 +306,52 @@ class ImageConverterApp:
     def update_compress_label(self, *args):
         """Update compression label"""
         self.compress_label.config(text=str(self.compress_var.get()))
+
+    def calculate_aspect_ratio(self):
+        """画像のアスペクト比を計算して保存"""
+        if not self.input_file or not os.path.exists(self.input_file):
+            self.original_aspect_ratio = None
+            return
+            
+        try:
+            # 画像を開いてサイズを取得
+            img = self.load_image(self.input_file)
+            width, height = img.size
+            self.original_aspect_ratio = width / height
+            print(f"アスペクト比を計算: {self.original_aspect_ratio:.3f}")
+        except Exception as e:
+            print(f"アスペクト比の計算に失敗: {e}")
+            self.original_aspect_ratio = None
+
+    def on_width_change(self, *args):
+        """幅が変更された時の処理"""
+        if not self.maintain_aspect.get() or self.is_updating_dimensions:
+            return
+            
+        try:
+            new_width = int(self.width_var.get())
+            if self.original_aspect_ratio and new_width > 0:
+                self.is_updating_dimensions = True
+                new_height = int(new_width / self.original_aspect_ratio)
+                self.height_var.set(str(new_height))
+                self.is_updating_dimensions = False
+        except ValueError:
+            pass  # 無効な値の場合は何もしない
+
+    def on_height_change(self, *args):
+        """高さが変更された時の処理"""
+        if not self.maintain_aspect.get() or self.is_updating_dimensions:
+            return
+            
+        try:
+            new_height = int(self.height_var.get())
+            if self.original_aspect_ratio and new_height > 0:
+                self.is_updating_dimensions = True
+                new_width = int(new_height * self.original_aspect_ratio)
+                self.width_var.set(str(new_width))
+                self.is_updating_dimensions = False
+        except ValueError:
+            pass  # 無効な値の場合は何もしない
 
     def toggle_resize(self):
         """Toggle resize options"""
@@ -339,6 +429,9 @@ class ImageConverterApp:
             self.input_format.config(text=self.input_file_ext)
             self.input_label.config(text=filename)
             self.status_var.set(f"Selected: {os.path.basename(filename)}")
+            
+            # アスペクト比を計算して保存
+            self.calculate_aspect_ratio()
 
     def select_output_file(self):
         """Open file dialog to select output file"""
@@ -594,10 +687,12 @@ class ImageConverterApp:
             icon_image = Image.new('RGB', (32, 32), color='blue')
 
         # トレイメニューを作成
-        menu = pystray.Menu(
-            item('表示', self.show_window, default=True),
-            item('終了', self.quit_app)
-        )
+        menu_items = [
+            item('表示(Ctrl+Shift+I)', self.show_window, default=True) if PYNPUT_AVAILABLE else item('表示', self.show_window, default=True),
+            item('終了', self.quit_app),
+        ]
+
+        menu = pystray.Menu(*menu_items)
 
         # トレイアイコンを作成（クリック時の動作も設定）
         self.tray_icon = pystray.Icon("ImageConverter", icon_image, "Imageflow", menu)
@@ -624,8 +719,51 @@ class ImageConverterApp:
         self.root.focus_force()  # フォーカスを取得
         self.is_hidden = False
 
+    def setup_hotkey(self):
+        """グローバルホットキーを設定"""
+        if not PYNPUT_AVAILABLE:
+            print("pynputライブラリが利用できません。ホットキー機能は無効です。")
+            return
+
+        try:
+            # Ctrl+Shift+I でアプリケーションを表示
+            self.hotkey_listener = keyboard.GlobalHotKeys({
+                '<ctrl>+<shift>+i': self.show_window_from_hotkey
+            })
+
+            # ホットキーリスナーを別スレッドで実行
+            self.hotkey_thread = threading.Thread(target=self.hotkey_listener.start, daemon=True)
+            self.hotkey_thread.start()
+            print("ホットキー設定完了: Ctrl+Shift+I でアプリケーションを表示")
+
+        except Exception as e:
+            print(f"ホットキー設定に失敗しました: {e}")
+
+    def show_window_from_hotkey(self):
+        """ホットキーからウィンドウを表示"""
+        # メインスレッドで実行する必要があるため、afterメソッドを使用
+        self.root.after(0, self.show_window)
+
+    def show_shortcuts(self):
+        """ショートカットキーの情報を表示"""
+        shortcuts_info = """ショートカットキー一覧:
+
+• Ctrl+Shift+I: システムトレイからアプリケーションを表示
+• Ctrl+Q: アプリケーションを終了
+
+"""
+        messagebox.showinfo("ショートカットキー", shortcuts_info)
+
+    def force_quit(self):
+        """アプリケーションを強制終了（システムトレイに隠さない）"""
+        self.quit_app()
+
     def quit_app(self, icon=None, item=None):
         """アプリケーションを終了"""
+        # ホットキーリスナーを停止
+        if self.hotkey_listener:
+            self.hotkey_listener.stop()
+
         if self.tray_icon:
             self.tray_icon.stop()
         self.root.quit()
