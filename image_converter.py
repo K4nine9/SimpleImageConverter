@@ -5,6 +5,7 @@ Converts between various image formats including png, jpeg, webp, eps, pdf, tiff
 """
 
 import os
+from textwrap import fill
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 from PIL import Image, ImageGrab
@@ -52,7 +53,7 @@ class ImageConverterApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Imageflow - Simple Image Converter")
-        self.root.geometry("600x550")
+        self.root.geometry("570x550")
         self.root.resizable(True,True)
 
         self.input_file = ""
@@ -223,9 +224,9 @@ class ImageConverterApp:
         self.width_entry = tk.Entry(
             resize_frame,
             textvariable=self.width_var,
-            width=10, state="disabled",
+            width=6, state="disabled",
             font=("M PLUS 2", 10))
-        self.width_entry.pack(side="left", padx=5)
+        self.width_entry.pack(side="left", padx=3)
         self.width_var.trace_add("write", self.on_width_change)
 
         tk.Label(resize_frame, text="高さ:", font=("M PLUS 2", 10)).pack(side="left", padx=5)
@@ -233,7 +234,7 @@ class ImageConverterApp:
         self.height_entry = tk.Entry(
             resize_frame,
             textvariable=self.height_var,
-            width=10, state="disabled",
+            width=6, state="disabled",
             font=("M PLUS 2", 10))
         self.height_entry.pack(side="left", padx=5)
         self.height_var.trace_add("write", self.on_height_change)
@@ -400,7 +401,7 @@ class ImageConverterApp:
         # Show/hide quality control
         if format_type in ['jpg', 'jpeg', 'webp']:
             self.quality_scale.config(state="normal")
-            self.info_label.config(text=f"Quality parameter applies to {format_type.upper()} format")
+            self.info_label.config(text=f"品質… 0(低品質)から100(高品質)")
         else:
             self.quality_scale.config(state="disabled")
 
@@ -410,6 +411,9 @@ class ImageConverterApp:
             self.info_label.config(text="圧縮レベル… 0(無圧縮)から9(最大圧縮)")
         else:
             self.compress_scale.config(state="disabled")
+
+        if format_type not in ['jpg', 'jpeg', 'webp', 'png']:
+            self.info_label.config(text="")
 
         # Special format info
         if format_type in ['heif', 'heic']:
