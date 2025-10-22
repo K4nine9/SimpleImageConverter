@@ -53,8 +53,9 @@ class ImageConverterApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Imageflow - Simple Image Converter")
-        self.root.geometry("570x550")
-        self.root.resizable(True,True)
+        self.root.geometry("650x700")
+        self.root.resizable(True, True)
+        self.root.minsize(600, 650)
 
         self.input_file = ""
         self.input_file_ext = "ファイル未入力…"
@@ -95,155 +96,167 @@ class ImageConverterApp:
 
     def setup_ui(self):
         """Setup the user interface"""
+        # Configure ttk styles
+        self.setup_styles()
+        
         # Menu bar
         self.create_menu_bar()
 
+        # Main container with padding
+        main_container = ttk.Frame(self.root, padding="20")
+        main_container.pack(fill="both", expand=True)
+
         # Title
-        title_label = tk.Label(
-            self.root,
+        title_label = ttk.Label(
+            main_container,
             text="Imageflow - Simple Image Converter",
-            font=("M PLUS 2", 18, "bold"))
-        title_label.pack(pady=2)
+            style="Title.TLabel")
+        title_label.pack(pady=(0, 20))
 
         # Input file section
-        input_frame = tk.LabelFrame(self.root, text="入力ファイル", padx=10, pady=5, font=("M PLUS 2", 10))
-        input_frame.pack(fill="x", padx=20, pady=5)
+        input_frame = ttk.LabelFrame(main_container, text="入力ファイル", padding="15")
+        input_frame.pack(fill="x", pady=(0, 10))
 
-        self.input_label = tk.Label(
-            input_frame,
+        input_content = ttk.Frame(input_frame)
+        input_content.pack(fill="x")
+
+        self.input_label = ttk.Label(
+            input_content,
             text="ファイルが選択されていません…",
-            wraplength=500,
-            justify="left",
-            font=("M PLUS 2", 10))
-        self.input_label.pack(side="left", fill="x", expand=True)
+            style="Info.TLabel")
+        self.input_label.pack(side="left", fill="x", expand=True, padx=(0, 10))
 
-        input_btn = tk.Button(
-            input_frame,
+        input_btn = ttk.Button(
+            input_content,
             text="ブラウズ…",
             command=self.select_input_file,
-            font=("M PLUS 2", 10))
+            style="Primary.TButton")
         input_btn.pack(side="right")
 
         # Output file section
-        output_frame = tk.LabelFrame(
-            self.root,
+        output_frame = ttk.LabelFrame(
+            main_container,
             text="出力先(オプション)",
-            padx=10, pady=5, font=("M PLUS 2", 10))
-        output_frame.pack(fill="x", padx=20, pady=5)
+            padding="15")
+        output_frame.pack(fill="x", pady=(0, 10))
 
-        self.output_label = tk.Label(
-            output_frame,
+        output_content = ttk.Frame(output_frame)
+        output_content.pack(fill="x")
+
+        self.output_label = ttk.Label(
+            output_content,
             text="自動(入力ディレクトリと同じ)",
-            wraplength=500,
-            justify="left",
-            font=("M PLUS 2", 10))
-        self.output_label.pack(side="left", fill="x", expand=True)
+            style="Info.TLabel")
+        self.output_label.pack(side="left", fill="x", expand=True, padx=(0, 10))
 
-        output_btn = tk.Button(
-            output_frame,
+        output_btn = ttk.Button(
+            output_content,
             text="ブラウズ…",
             command=self.select_output_file,
-            font=("M PLUS 2", 10))
+            style="Secondary.TButton")
         output_btn.pack(side="right")
 
         # Output format section
-        format_frame = tk.LabelFrame(self.root, text="出力形式", padx=10, pady=10, font=("M PLUS 2", 10))
-        format_frame.pack(fill="x", padx=20, pady=5)
+        format_frame = ttk.LabelFrame(main_container, text="出力形式", padding="15")
+        format_frame.pack(fill="x", pady=(0, 10))
+
+        format_content = ttk.Frame(format_frame)
+        format_content.pack(fill="x")
 
         self.format_var = tk.StringVar(value="png")
-        self.input_format = tk.Label(format_frame, text=self.input_file_ext.upper(), font=("M PLUS 2", 10))
-        self.input_format.pack(anchor="center",expand=True, side="left")
+        self.input_format = ttk.Label(format_content, text=self.input_file_ext.upper(), style="Format.TLabel")
+        self.input_format.pack(side="left", padx=(0, 10))
 
-        self.format_arrow = tk.Label(format_frame, text="  →  ", font=("M PLUS 2", 10))
-        self.format_arrow.pack(anchor="center", expand=True, side="left")
-
+        self.format_arrow = ttk.Label(format_content, text="→", style="Arrow.TLabel")
+        self.format_arrow.pack(side="left", padx=10)
 
         self.format_combo = ttk.Combobox(
-            format_frame,
+            format_content,
             textvariable=self.format_var,
             values=self.output_formats,
             state="readonly",
-            width=15
+            width=15,
+            style="Format.TCombobox"
         )
-        self.format_combo.pack(anchor="center", expand=True, side="left", padx=10)
+        self.format_combo.pack(side="left", padx=(10, 0))
         self.format_combo.bind("<<ComboboxSelected>>", self.on_format_change)
 
         # Parameters section
-        self.params_frame = tk.LabelFrame(
-            self.root,
+        self.params_frame = ttk.LabelFrame(
+            main_container,
             text="パラメータ",
-            padx=10, pady=5, font=("M PLUS 2", 10)
+            padding="15"
         )
-        self.params_frame.pack(fill="both", expand=True, padx=20, pady=5)
+        self.params_frame.pack(fill="both", expand=True, pady=(0, 10))
 
         # Quality parameter (for JPEG, WebP)
-        quality_frame = tk.Frame(self.params_frame)
-        quality_frame.pack(fill="x", pady=2.5)
+        quality_frame = ttk.Frame(self.params_frame)
+        quality_frame.pack(fill="x", pady=(0, 15))
 
-        tk.Label(quality_frame, text="品質 (1-100):", font=("M PLUS 2", 10)).pack(side="left")
+        ttk.Label(quality_frame, text="品質 (1-100):", style="Param.TLabel").pack(side="left")
         self.quality_var = tk.IntVar(value=95)
-        self.quality_scale = tk.Scale(
+        self.quality_scale = ttk.Scale(
             quality_frame, from_=1, to=100,
             orient="horizontal", variable=self.quality_var,
-            length=300, font=("M PLUS 2", 9)
+            length=300
         )
-        self.quality_scale.pack(side="left", padx=10)
-        self.quality_label = tk.Label(quality_frame, text="95", font=("M PLUS 2", 10))
+        self.quality_scale.pack(side="left", padx=(10, 5))
+        self.quality_label = ttk.Label(quality_frame, text="95", style="Value.TLabel")
         self.quality_label.pack(side="left")
         self.quality_var.trace_add("write", self.update_quality_label)
 
         # Compression level (for PNG)
-        compress_frame = tk.Frame(self.params_frame)
-        compress_frame.pack(fill="x", pady=5)
+        compress_frame = ttk.Frame(self.params_frame)
+        compress_frame.pack(fill="x", pady=(0, 15))
 
-        tk.Label(compress_frame, text="圧縮度 (0-9):", font=("M PLUS 2", 10)).pack(side="left")
+        ttk.Label(compress_frame, text="圧縮度 (0-9):", style="Param.TLabel").pack(side="left")
         self.compress_var = tk.IntVar(value=6)
-        self.compress_scale = tk.Scale(
+        self.compress_scale = ttk.Scale(
             compress_frame, from_=0, to=9,
             orient="horizontal", variable=self.compress_var,
-            length=300, font=("M PLUS 2", 9))
-        self.compress_scale.pack(side="left", padx=10)
-        self.compress_label = tk.Label(compress_frame, text="6", font=("M PLUS 2", 10))
+            length=300)
+        self.compress_scale.pack(side="left", padx=(10, 5))
+        self.compress_label = ttk.Label(compress_frame, text="6", style="Value.TLabel")
         self.compress_label.pack(side="left")
         self.compress_var.trace_add("write", self.update_compress_label)
 
         # Resize options
-        resize_frame = tk.Frame(self.params_frame)
-        resize_frame.pack(fill="x", pady=2.5)
+        resize_frame = ttk.Frame(self.params_frame)
+        resize_frame.pack(fill="x", pady=(0, 15))
 
         self.resize_var = tk.BooleanVar(value=False)
-        self.resize_check = tk.Checkbutton(
+        self.resize_check = ttk.Checkbutton(
             resize_frame, text="画像のリサイズ",
             variable=self.resize_var,
             command=self.toggle_resize,
-            font=("M PLUS 2", 10))
+            style="Param.TCheckbutton")
         self.resize_check.pack(side="left")
 
-        tk.Label(resize_frame, text="幅:", font=("M PLUS 2", 10)).pack(side="left", padx=(20, 5))
+        ttk.Label(resize_frame, text="幅:", style="Param.TLabel").pack(side="left", padx=(20, 5))
         self.width_var = tk.StringVar(value="800")
-        self.width_entry = tk.Entry(
+        self.width_entry = ttk.Entry(
             resize_frame,
             textvariable=self.width_var,
             width=6, state="disabled",
-            font=("M PLUS 2", 10))
+            style="Param.TEntry")
         self.width_entry.pack(side="left", padx=3)
         self.width_var.trace_add("write", self.on_width_change)
 
-        tk.Label(resize_frame, text="高さ:", font=("M PLUS 2", 10)).pack(side="left", padx=5)
+        ttk.Label(resize_frame, text="高さ:", style="Param.TLabel").pack(side="left", padx=5)
         self.height_var = tk.StringVar(value="600")
-        self.height_entry = tk.Entry(
+        self.height_entry = ttk.Entry(
             resize_frame,
             textvariable=self.height_var,
             width=6, state="disabled",
-            font=("M PLUS 2", 10))
+            style="Param.TEntry")
         self.height_entry.pack(side="left", padx=5)
         self.height_var.trace_add("write", self.on_height_change)
 
         self.maintain_aspect = tk.BooleanVar(value=True)
-        self.aspect_check = tk.Checkbutton(
+        self.aspect_check = ttk.Checkbutton(
             resize_frame, text="アスペクト比を維持",
             variable=self.maintain_aspect, state="disabled",
-            font=("M PLUS 2", 10))
+            style="Param.TCheckbutton")
         self.aspect_check.pack(side="left", padx=10)
 
         # アスペクト比を保存する変数
@@ -251,49 +264,129 @@ class ImageConverterApp:
         self.is_updating_dimensions = False  # 無限ループを防ぐフラグ
 
         # Format-specific info
-        self.info_label = tk.Label(
+        self.info_label = ttk.Label(
             self.params_frame, text="",
-            fg="blue", wraplength=600, justify="left",
-            font=("M PLUS 2", 9))
-        self.info_label.pack(pady=5)
+            style="Info.TLabel",
+            wraplength=600)
+        self.info_label.pack(pady=(10, 0))
 
         # Convert button
-        convert_btn = tk.Button(
-            self.root, text="変換", command=self.convert_image,
-            bg="#4CAF50", fg="white", font=("M PLUS 2", 12, "bold"),
-            padx=10, pady=10,
-        )
-        convert_btn.pack(fill="x",pady=10, padx=20)
+        convert_btn = ttk.Button(
+            main_container, text="変換", command=self.convert_image,
+            style="Convert.TButton",
+            width=20)
+        convert_btn.pack(pady=(10, 0))
 
         # Status bar
         self.status_var = tk.StringVar(value="準備完了")
-        status_bar = tk.Label(
-            self.root, textvariable=self.status_var,
-            bd=1, relief="sunken", anchor="w",
-            font=("M PLUS 2", 9))
-        status_bar.pack(side="bottom", fill="x")
+        status_bar = ttk.Label(
+            main_container, textvariable=self.status_var,
+            style="Status.TLabel",
+            anchor="center")
+        status_bar.pack(side="bottom", fill="x", pady=(10, 0))
 
         # Initial parameter visibility update
         self.on_format_change()
 
-        # update window
-        # self.input_format.config(text= self.input_file_ext.upper())
-        # self.root.update()
+    def setup_styles(self):
+        """Setup ttk styles for modern appearance"""
+        style = ttk.Style()
+        
+        # Configure theme
+        style.theme_use('clam')
+        
+        # Title style
+        style.configure("Title.TLabel",
+                       font=("M PLUS 2", 18, "bold"),
+                       foreground="#2c3e50")
+        
+        # Info label style
+        style.configure("Info.TLabel",
+                       font=("M PLUS 2", 10),
+                       foreground="#7f8c8d",
+                       wraplength=500)
+        
+        # Format label style
+        style.configure("Format.TLabel",
+                       font=("M PLUS 2", 12, "bold"),
+                       foreground="#34495e")
+        
+        # Arrow label style
+        style.configure("Arrow.TLabel",
+                       font=("M PLUS 2", 14),
+                       foreground="#95a5a6")
+        
+        # Format combobox style
+        style.configure("Format.TCombobox",
+                       font=("M PLUS 2", 10))
+        
+        # Parameter label style
+        style.configure("Param.TLabel",
+                       font=("M PLUS 2", 10),
+                       foreground="#2c3e50")
+        
+        # Value label style
+        style.configure("Value.TLabel",
+                       font=("M PLUS 2", 10, "bold"),
+                       foreground="#e74c3c")
+        
+        
+        # Parameter entry style
+        style.configure("Param.TEntry",
+                       font=("M PLUS 2", 10))
+        
+        # Parameter checkbutton style
+        style.configure("Param.TCheckbutton",
+                       font=("M PLUS 2", 10))
+        
+        # Primary button style
+        style.configure("Primary.TButton",
+                       font=("M PLUS 2", 10, "bold"),
+                       foreground="white",
+                       background="#3498db",
+                       padding=(10, 5))
+        style.map("Primary.TButton",
+                 background=[('active', '#2980b9')])
+        
+        # Secondary button style
+        style.configure("Secondary.TButton",
+                       font=("M PLUS 2", 10),
+                       foreground="#2c3e50",
+                       background="#ecf0f1",
+                       padding=(10, 5))
+        style.map("Secondary.TButton",
+                 background=[('active', '#bdc3c7')])
+        
+        # Convert button style
+        style.configure("Convert.TButton",
+                       font=("M PLUS 2", 12, "bold"),
+                       foreground="white",
+                       background="#27ae60",
+                       padding=(20, 10))
+        style.map("Convert.TButton",
+                 background=[('active', '#229954')])
+        
+        # Status label style
+        style.configure("Status.TLabel",
+                       font=("M PLUS 2", 9),
+                       foreground="#7f8c8d",
+                       background="#ecf0f1",
+                       padding=(5, 3))
 
     def create_menu_bar(self):
         """メニューバーを作成"""
-        menubar = tk.Menu(self.root)
+        menubar = tk.Menu(self.root, font=("M PLUS 2", 9))
         self.root.config(menu=menubar)
 
         # ファイルメニュー
-        file_menu = tk.Menu(menubar, tearoff=0)
+        file_menu = tk.Menu(menubar, tearoff=0, font=("M PLUS 2", 9))
         menubar.add_cascade(label="設定", menu=file_menu)
 
         # 終了オプション
         file_menu.add_command(label="終了", command=self.force_quit, accelerator="Ctrl+Q")
 
         # ヘルプメニュー
-        help_menu = tk.Menu(menubar, tearoff=0)
+        help_menu = tk.Menu(menubar, tearoff=0, font=("M PLUS 2", 9))
         menubar.add_cascade(label="ヘルプ", menu=help_menu)
 
         # ショートカットキー情報
