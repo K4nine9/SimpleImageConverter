@@ -312,8 +312,8 @@ class ImageConverterApp:
 
     def calculate_aspect_ratio(self):
         """画像のアスペクト比を計算して保存"""
-        print(f"calculate_aspect_ratio called: input_file={self.input_file}")
-        
+        ##print(f"calculate_aspect_ratio called: input_file={self.input_file}")
+
         # クリップボード画像の場合は、既に読み込まれた画像オブジェクトを使用
         if self.is_clipboard_image and hasattr(self.input_file, 'size'):
             try:
@@ -322,13 +322,13 @@ class ImageConverterApp:
                 # リサイズの幅と高さの値を画像の実際のサイズに設定
                 self.width_var.set(str(width))
                 self.height_var.set(str(height))
-                print(f"アスペクト比を計算（クリップボード）: {self.original_aspect_ratio:.3f} (width={width}, height={height})")
+                #print(f"アスペクト比を計算（クリップボード）: {self.original_aspect_ratio:.3f} (width={width}, height={height})")
                 return
             except Exception as e:
-                print(f"クリップボード画像のアスペクト比計算に失敗: {e}")
+                #print(f"クリップボード画像のアスペクト比計算に失敗: {e}")
                 self.original_aspect_ratio = None
                 return
-        
+
         # ファイルパスの場合
         if not self.input_file or not os.path.exists(self.input_file):
             print("No input file or file doesn't exist")
@@ -343,14 +343,14 @@ class ImageConverterApp:
             # リサイズの幅と高さの値を画像の実際のサイズに設定
             self.width_var.set(str(width))
             self.height_var.set(str(height))
-            print(f"アスペクト比を計算: {self.original_aspect_ratio:.3f} (width={width}, height={height})")
+            #print(f"アスペクト比を計算: {self.original_aspect_ratio:.3f} (width={width}, height={height})")
         except Exception as e:
-            print(f"アスペクト比の計算に失敗: {e}")
+            #print(f"アスペクト比の計算に失敗: {e}")
             self.original_aspect_ratio = None
 
     def on_width_change(self, *args):
         """幅が変更された時の処理"""
-        print(f"on_width_change called: width={self.width_var.get()}, maintain_aspect={self.maintain_aspect.get()}, is_updating={self.is_updating_dimensions}")
+        #print(f"on_width_change called: width={self.width_var.get()}, maintain_aspect={self.maintain_aspect.get()}, is_updating={self.is_updating_dimensions}")
         if not self.maintain_aspect.get() or self.is_updating_dimensions:
             return
 
@@ -359,7 +359,7 @@ class ImageConverterApp:
             if self.original_aspect_ratio and new_width > 0:
                 self.is_updating_dimensions = True
                 new_height = int(new_width / self.original_aspect_ratio)
-                print(f"Calculating new height: {new_height}")
+                #print(f"Calculating new height: {new_height}")
                 self.height_var.set(str(new_height))
                 self.is_updating_dimensions = False
         except ValueError:
@@ -367,7 +367,7 @@ class ImageConverterApp:
 
     def on_height_change(self, *args):
         """高さが変更された時の処理"""
-        print(f"on_height_change called: height={self.height_var.get()}, maintain_aspect={self.maintain_aspect.get()}, is_updating={self.is_updating_dimensions}")
+        #print(f"on_height_change called: height={self.height_var.get()}, maintain_aspect={self.maintain_aspect.get()}, is_updating={self.is_updating_dimensions}")
         if not self.maintain_aspect.get() or self.is_updating_dimensions:
             return
 
@@ -376,7 +376,7 @@ class ImageConverterApp:
             if self.original_aspect_ratio and new_height > 0:
                 self.is_updating_dimensions = True
                 new_width = int(new_height * self.original_aspect_ratio)
-                print(f"Calculating new width: {new_width}")
+                #print(f"Calculating new width: {new_width}")
                 self.width_var.set(str(new_width))
                 self.is_updating_dimensions = False
         except ValueError:
@@ -561,11 +561,11 @@ class ImageConverterApp:
             else:
                 print("Clipboard is empty or no image found. Skipped")
                 return None
-        
+
         # ファイルパスが空の場合はNoneを返す
         if not filepath:
             return None
-            
+
         ext = os.path.splitext(filepath)[1].lower()[1:]
 
         # Handle HEIF/HEIC
@@ -730,6 +730,7 @@ class ImageConverterApp:
             icon_image = icon_image.resize((32, 32), Image.Resampling.LANCZOS)
         except FileNotFoundError:
             # icon.pngが見つからない場合は、デフォルトの青いアイコンを作成
+            print("FileNotFoundError: デフォルトのアイコンファイルが見つかりませんでした")
             icon_image = Image.new('RGB', (32, 32), color='blue')
         except Exception as e:
             # その他のエラーの場合も、デフォルトの青いアイコンを作成
@@ -773,7 +774,7 @@ class ImageConverterApp:
     def setup_hotkey(self):
         """グローバルホットキーを設定"""
         if not PYNPUT_AVAILABLE:
-            print("pynputライブラリが利用できません。ホットキー機能は無効です。")
+            print("pynputライブラリが利用できません。ホットキー機能は無効化されました。")
             return
 
         try:
