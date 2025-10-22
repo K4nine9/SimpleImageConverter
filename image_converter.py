@@ -5,7 +5,6 @@ Converts between various image formats including png, jpeg, webp, eps, pdf, tiff
 """
 
 import os
-from textwrap import fill
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 from PIL import Image, ImageGrab
