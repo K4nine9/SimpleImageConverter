@@ -814,7 +814,6 @@ class ImageConverterApp:
             self.input_file_ext = "png"
             self.input_format.config(text=self.input_file_ext.upper())
             self.status_var.set("クリップボードから画像を貼り付けました")
-            
             # アスペクト比を計算して保存
             self.calculate_aspect_ratio()
 
