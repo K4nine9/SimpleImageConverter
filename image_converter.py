@@ -7,7 +7,7 @@ Converts between various image formats including png, jpeg, webp, eps, pdf, tiff
 import os
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
-from PIL import Image
+from PIL import Image, ImageGrab
 import io
 import pystray
 from pystray import MenuItem as item
@@ -58,15 +58,18 @@ class ImageConverterApp:
         self.input_file = ""
         self.input_file_ext = "ファイル未入力…"
         self.output_file = ""
-        
+
         # トレイアイコン関連
         self.tray_icon = None
         self.tray_thread = None
         self.is_hidden = False
-        
+
         # ホットキー関連
         self.hotkey_listener = None
         self.hotkey_thread = None
+
+        # クリップボード関連
+        self.is_clipboard_image = False
 
         # Supported formats
         self.input_formats = ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'tiff', 'webp', 'ico', 'eps']
@@ -93,7 +96,7 @@ class ImageConverterApp:
         """Setup the user interface"""
         # Menu bar
         self.create_menu_bar()
-        
+
         # Title
         title_label = tk.Label(
             self.root,
@@ -241,7 +244,7 @@ class ImageConverterApp:
             variable=self.maintain_aspect, state="disabled",
             font=("M PLUS 2", 10))
         self.aspect_check.pack(side="left", padx=10)
-        
+
         # アスペクト比を保存する変数
         self.original_aspect_ratio = None
         self.is_updating_dimensions = False  # 無限ループを防ぐフラグ
@@ -280,22 +283,22 @@ class ImageConverterApp:
         """メニューバーを作成"""
         menubar = tk.Menu(self.root)
         self.root.config(menu=menubar)
-        
+
         # ファイルメニュー
         file_menu = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label="設定", menu=file_menu)
-        
+
         # 終了オプション
         file_menu.add_command(label="終了", command=self.force_quit, accelerator="Ctrl+Q")
-        
+
         # ヘルプメニュー
         help_menu = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label="ヘルプ", menu=help_menu)
-        
+
         # ショートカットキー情報
         if PYNPUT_AVAILABLE:
             help_menu.add_command(label="ショートカットキー", command=self.show_shortcuts)
-        
+
         # キーボードショートカットをバインド
         self.root.bind('<Control-q>', lambda event: self.force_quit())
 
@@ -309,30 +312,54 @@ class ImageConverterApp:
 
     def calculate_aspect_ratio(self):
         """画像のアスペクト比を計算して保存"""
+        print(f"calculate_aspect_ratio called: input_file={self.input_file}")
+        
+        # クリップボード画像の場合は、既に読み込まれた画像オブジェクトを使用
+        if self.is_clipboard_image and hasattr(self.input_file, 'size'):
+            try:
+                width, height = self.input_file.size
+                self.original_aspect_ratio = width / height
+                # リサイズの幅と高さの値を画像の実際のサイズに設定
+                self.width_var.set(str(width))
+                self.height_var.set(str(height))
+                print(f"アスペクト比を計算（クリップボード）: {self.original_aspect_ratio:.3f} (width={width}, height={height})")
+                return
+            except Exception as e:
+                print(f"クリップボード画像のアスペクト比計算に失敗: {e}")
+                self.original_aspect_ratio = None
+                return
+        
+        # ファイルパスの場合
         if not self.input_file or not os.path.exists(self.input_file):
+            print("No input file or file doesn't exist")
             self.original_aspect_ratio = None
             return
-            
+
         try:
             # 画像を開いてサイズを取得
             img = self.load_image(self.input_file)
             width, height = img.size
             self.original_aspect_ratio = width / height
-            print(f"アスペクト比を計算: {self.original_aspect_ratio:.3f}")
+            # リサイズの幅と高さの値を画像の実際のサイズに設定
+            self.width_var.set(str(width))
+            self.height_var.set(str(height))
+            print(f"アスペクト比を計算: {self.original_aspect_ratio:.3f} (width={width}, height={height})")
         except Exception as e:
             print(f"アスペクト比の計算に失敗: {e}")
             self.original_aspect_ratio = None
 
     def on_width_change(self, *args):
         """幅が変更された時の処理"""
+        print(f"on_width_change called: width={self.width_var.get()}, maintain_aspect={self.maintain_aspect.get()}, is_updating={self.is_updating_dimensions}")
         if not self.maintain_aspect.get() or self.is_updating_dimensions:
             return
-            
+
         try:
             new_width = int(self.width_var.get())
             if self.original_aspect_ratio and new_width > 0:
                 self.is_updating_dimensions = True
                 new_height = int(new_width / self.original_aspect_ratio)
+                print(f"Calculating new height: {new_height}")
                 self.height_var.set(str(new_height))
                 self.is_updating_dimensions = False
         except ValueError:
@@ -340,14 +367,16 @@ class ImageConverterApp:
 
     def on_height_change(self, *args):
         """高さが変更された時の処理"""
+        print(f"on_height_change called: height={self.height_var.get()}, maintain_aspect={self.maintain_aspect.get()}, is_updating={self.is_updating_dimensions}")
         if not self.maintain_aspect.get() or self.is_updating_dimensions:
             return
-            
+
         try:
             new_height = int(self.height_var.get())
             if self.original_aspect_ratio and new_height > 0:
                 self.is_updating_dimensions = True
                 new_width = int(new_height * self.original_aspect_ratio)
+                print(f"Calculating new width: {new_width}")
                 self.width_var.set(str(new_width))
                 self.is_updating_dimensions = False
         except ValueError:
@@ -429,7 +458,7 @@ class ImageConverterApp:
             self.input_format.config(text=self.input_file_ext)
             self.input_label.config(text=filename)
             self.status_var.set(f"Selected: {os.path.basename(filename)}")
-            
+
             # アスペクト比を計算して保存
             self.calculate_aspect_ratio()
 
@@ -462,21 +491,26 @@ class ImageConverterApp:
 
     def convert_image(self):
         """Convert the image"""
+
         if not self.input_file:
             messagebox.showerror("Error", "Please select an input file")
             return
 
-        if not os.path.exists(self.input_file):
-            messagebox.showerror("Error", "Input file does not exist")
-            return
+        if not self.is_clipboard_image:
+            if not os.path.exists(self.input_file):
+                messagebox.showerror("Error", "Input file does not exist")
+                return
 
         # Determine output file
         if not self.output_file:
-            input_dir = os.path.dirname(self.input_file)
-            input_basename = os.path.splitext(os.path.basename(self.input_file))[0]
+            if self.is_clipboard_image:
+                input_dir = os.path.expanduser('~/Desktop')
+                input_basename = "clipboard"
+            else:
+                input_dir = os.path.dirname(self.input_file)
+                input_basename = os.path.splitext(os.path.basename(self.input_file))[0]
             self.output_file = os.path.join(input_dir,
                                             f"{input_basename}.{self.format_var.get()}")
-
         try:
             self.status_var.set("変換中…")
             self.root.update()
@@ -484,7 +518,10 @@ class ImageConverterApp:
             output_format = self.format_var.get().lower()
 
             # Load image based on input format
-            img = self.load_image(self.input_file)
+            if self.is_clipboard_image:
+                img = self.load_image(filepath="")
+            else:
+                img = self.load_image(self.input_file)
 
             # Apply resize if needed
             if self.resize_var.get():
@@ -516,6 +553,19 @@ class ImageConverterApp:
 
     def load_image(self, filepath):
         """Load image from file, handling special formats"""
+        # クリップボード画像の場合は特別処理
+        if self.is_clipboard_image:
+            image = ImageGrab.grabclipboard()
+            if image:
+                return image
+            else:
+                print("Clipboard is empty or no image found. Skipped")
+                return None
+        
+        # ファイルパスが空の場合はNoneを返す
+        if not filepath:
+            return None
+            
         ext = os.path.splitext(filepath)[1].lower()[1:]
 
         # Handle HEIF/HEIC
@@ -732,10 +782,15 @@ class ImageConverterApp:
                 '<ctrl>+<shift>+i': self.show_window_from_hotkey
             })
 
+            # Ctrl+Vで画像を入力に貼り付け
+            self.hotkey_listener = keyboard.GlobalHotKeys({
+                '<ctrl>+v': self.paste_image_to_input
+            })
+
             # ホットキーリスナーを別スレッドで実行
             self.hotkey_thread = threading.Thread(target=self.hotkey_listener.start, daemon=True)
             self.hotkey_thread.start()
-            print("ホットキー設定完了: Ctrl+Shift+I でアプリケーションを表示")
+            print("ホットキー設定完了")
 
         except Exception as e:
             print(f"ホットキー設定に失敗しました: {e}")
@@ -745,12 +800,27 @@ class ImageConverterApp:
         # メインスレッドで実行する必要があるため、afterメソッドを使用
         self.root.after(0, self.show_window)
 
+    def paste_image_to_input(self):
+        """画像を入力に貼り付け"""
+        self.is_clipboard_image = True
+        img = self.load_image(filepath="")
+        if img:
+            self.input_label.config(text="クリップボードから貼り付けられた画像")
+            self.input_file = img
+            self.input_file_ext = "png"
+            self.input_format.config(text=self.input_file_ext.upper())
+            self.status_var.set("クリップボードから画像を貼り付けました")
+            
+            # アスペクト比を計算して保存
+            self.calculate_aspect_ratio()
+
     def show_shortcuts(self):
         """ショートカットキーの情報を表示"""
         shortcuts_info = """ショートカットキー一覧:
 
-• Ctrl+Shift+I: システムトレイからアプリケーションを表示
-• Ctrl+Q: アプリケーションを終了
+・Ctrl+Shift+I: システムトレイからアプリケーションを表示
+・Ctrl+Q: アプリケーションを終了
+・Ctrl+V: クリップボードから画像を入力に貼り付け
 
 """
         messagebox.showinfo("ショートカットキー", shortcuts_info)
