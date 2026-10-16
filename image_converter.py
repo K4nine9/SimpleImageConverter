@@ -566,8 +566,12 @@ class ImageConverterApp:
             return
 
         # Get default filename with new extension
-        input_dir = os.path.dirname(self.input_file)
-        input_basename = os.path.splitext(os.path.basename(self.input_file))[0]
+        if self.is_clipboard_image:
+            input_dir = os.path.expanduser('~/Desktop')
+            input_basename = "clipboard"
+        else:
+            input_dir = os.path.dirname(self.input_file)
+            input_basename = os.path.splitext(os.path.basename(self.input_file))[0]
         default_name = f"{input_basename}.{self.format_var.get()}"
 
         filename = filedialog.asksaveasfilename(
@@ -575,6 +579,7 @@ class ImageConverterApp:
             initialdir=input_dir,
             initialfile=default_name,
             defaultextension=f".{self.format_var.get()}",
+            confirmoverwrite=False,
             filetypes=[
                 (f"{self.format_var.get().upper()} files", f"*.{self.format_var.get()}"),
                 ("All files", "*.*")
@@ -599,7 +604,9 @@ class ImageConverterApp:
                 return
 
         # Determine output file
+        is_auto_output = False
         if not self.output_file:
+            is_auto_output = True
             if self.is_clipboard_image:
                 input_dir = os.path.expanduser('~/Desktop')
                 input_basename = "clipboard"
@@ -608,6 +615,21 @@ class ImageConverterApp:
                 input_basename = os.path.splitext(os.path.basename(self.input_file))[0]
             self.output_file = os.path.join(input_dir,
                                             f"{input_basename}.{self.format_var.get()}")
+
+        # Check if output file already exists and prompt for confirmation
+        if os.path.exists(self.output_file):
+            filename = os.path.basename(self.output_file)
+            confirm = messagebox.askyesno(
+                "警告",
+                f"ファイル '{filename}' は既に存在します。\n上書きしてよろしいですか？",
+                icon="warning"
+            )
+            if not confirm:
+                if is_auto_output:
+                    self.output_file = ""
+                self.status_var.set("保存をキャンセルしました")
+                return
+
         try:
             self.status_var.set("変換中…")
             self.root.update()
@@ -642,7 +664,7 @@ class ImageConverterApp:
 
             # Reset output file for next conversion
             self.output_file = ""
-            self.output_label.config(text="Auto (same as input location)")
+            self.output_label.config(text="自動(入力ディレクトリと同じ)")
 
         except Exception as e:
             self.status_var.set("変換に失敗しました")
